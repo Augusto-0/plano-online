@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Sistema de Planos</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+  background:#f1f5f9;
+  color:#222;
+}
+
+.menu-btn{
+  position:fixed;
+  top:15px;
+  left:15px;
+  z-index:1000;
+  background:#0f172a;
+  color:white;
+  border:none;
+  padding:12px 16px;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:18px;
+}
+
+.sidebar{
+  position:fixed;
+  left:-280px;
+  top:0;
+  width:260px;
+  height:100%;
+  background:#0f172a;
+  color:white;
+  transition:0.3s;
+  z-index:999;
+  padding-top:70px;
+}
+
+.sidebar.active{
+  left:0;
+}
+
+.sidebar ul{
+  list-style:none;
+}
+
+.sidebar li{
+  padding:18px 25px;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+  cursor:pointer;
+}
+
+.sidebar li:hover{
+  background:#1e293b;
+}
+
+.container{
+  padding:80px 20px 30px;
+  max-width:1200px;
+  margin:auto;
+}
+
+.page{
+  display:none;
+}
+
+.page.active{
+  display:block;
+}
+
+.card{
+  background:white;
+  padding:25px;
+  border-radius:16px;
+  margin-bottom:20px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+
+h1{
+  margin-bottom:25px;
+  color:#0f172a;
+}
+
+h2{
+  margin-bottom:20px;
+  color:#0f172a;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:15px;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+}
+
+label{
+  margin-bottom:6px;
+  font-weight:bold;
+  font-size:14px;
+}
+
+input,
+select,
+textarea{
+  padding:12px;
+  border:1px solid #ccc;
+  border-radius:10px;
+}
+
+.planos{
+  display:flex;
+  gap:15px;
+  flex-wrap:wrap;
+}
+
+.plano{
+  flex:1;
+  min-width:150px;
+  padding:20px;
+  border:2px solid #ccc;
+  border-radius:12px;
+  text-align:center;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.plano.selected{
+  background:#dbeafe;
+  border-color:#2563eb;
+}
+
+button{
+  border:none;
+  padding:12px 18px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.btn{
+  background:#0f172a;
+  color:white;
+}
+
+.btn-green{
+  background:#16a34a;
+  color:white;
+}
+
+.btn-orange{
+  background:#ea580c;
+  color:white;
+}
+
+.dependente{
+  background:#f8fafc;
+  border:1px solid #ddd;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:15px;
+}
+
+.adesao-item{
+  border:1px solid #ddd;
+  border-radius:12px;
+  padding:15px;
+  margin-bottom:15px;
+}
+
+.badge{
+  display:inline-block;
+  padding:5px 10px;
+  border-radius:20px;
+  color:white;
+  font-size:12px;
+  margin-top:10px;
+}
+
+.paga-direta{
+  background:#16a34a;
+}
+
+.paga-baixa{
+  background:#2563eb;
+}
+
+.atrasada{
+  background:#dc2626;
+}
+
+.pendente{
+  background:#ea580c;
+}
+
+.hidden{
+  display:none;
+}
+
+@media(max-width:768px){
+
+  .planos{
+    flex-direction:column;
+  }
+
+}
+
+</style>
+
+</head>
+<body>
+
+<button class="menu-btn" onclick="toggleMenu()">☰</button>
+
+<div class="sidebar" id="sidebar">
+
+  <ul>
+    <li onclick="abrirPagina('cadastro')">
+      Cadastro de Plano
+    </li>
+
+    <li onclick="abrirPagina('adesoes')">
+      Controle de Adesões
+    </li>
+  </ul>
+
+</div>
+
+<div class="container">
+
+  <!-- CADASTRO -->
+  <div class="page active" id="cadastro">
+
+    <h1>Cadastro de Plano</h1>
+
+    <div class="card">
+
+      <h2>Plano</h2>
+
+      <div class="planos">
+
+        <div class="plano" onclick="selecionarPlano(this,'Rubi')">
+          RUBI
+        </div>
+
+        <div class="plano" onclick="selecionarPlano(this,'Esmeralda')">
+          ESMERALDA
+        </div>
+
+        <div class="plano" onclick="selecionarPlano(this,'Ouro')">
+          OURO
+        </div>
+
+      </div>
+
+      <input type="hidden" id="plano">
+
+      <div class="grid" style="margin-top:20px;">
+
+        <div class="field">
+          <label>Valor do Plano</label>
+          <input type="number" id="valorPlano">
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Dados do Cliente</h2>
+
+      <div class="grid">
+
+        <div class="field">
+          <label>Nome Completo</label>
+          <input type="text" id="nome">
+        </div>
+
+        <div class="field">
+          <label>Data de Nascimento</label>
+          <input type="date" id="nascimento">
+        </div>
+
+        <div class="field">
+          <label>CPF</label>
+          <input type="text" id="cpf">
+        </div>
+
+        <div class="field">
+          <label>RG</label>
+          <input type="text" id="rg">
+        </div>
+
+        <div class="field">
+          <label>Endereço</label>
+          <input type="text" id="endereco">
+        </div>
+
+        <div class="field">
+          <label>Número</label>
+          <input type="text" id="numero">
+        </div>
+
+        <div class="field">
+          <label>Bairro</label>
+          <input type="text" id="bairro">
+        </div>
+
+        <div class="field">
+          <label>CEP</label>
+          <input type="text" id="cep">
+        </div>
+
+        <div class="field">
+          <label>Telefone</label>
+          <input type="text" id="telefone">
+        </div>
+
+        <div class="field">
+          <label>Ponto de Referência</label>
+          <input type="text" id="referencia">
+        </div>
+
+        <div class="field">
+          <label>Estado Civil</label>
+          <input type="text" id="estadoCivil">
+        </div>
+
+        <div class="field">
+          <label>Religião</label>
+          <input type="text" id="religiao">
+        </div>
+
+        <div class="field">
+          <label>Data de Adesão</label>
+          <input type="date" id="dataAdesao">
+        </div>
+
+        <div class="field">
+          <label>Data de Vencimento</label>
+          <input type="date" id="vencimento">
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Dependentes</h2>
+
+      <div id="dependentes"></div>
+
+      <button class="btn" onclick="adicionarDependente()">
+        + Adicionar Dependente
+      </button>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Localização</h2>
+
+      <div class="grid">
+
+        <div class="field">
+          <label>Local</label>
+          <input type="text" id="local">
+        </div>
+
+        <div class="field">
+          <label>Data</label>
+          <input type="date" id="dataLocal">
+        </div>
+
+      </div>
+
+      <button class="btn-orange" style="margin-top:15px;" onclick="pegarLocalizacao()">
+        Pegar Localização
+      </button>
+
+      <p id="linkLocal" style="margin-top:10px;"></p>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Gerar PDF</h2>
+
+      <button class="btn-green" onclick="gerarPDF()">
+        Gerar PDF
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- ADESÕES -->
+  <div class="page" id="adesoes">
+
+    <h1>Controle de Adesões</h1>
+
+    <div class="card">
+
+      <h2>Nova Adesão</h2>
+
+      <div class="grid">
+
+        <div class="field">
+          <label>Nome do Cliente</label>
+          <input type="text" id="adesaoNome">
+        </div>
+
+        <div class="field">
+          <label>Valor</label>
+          <input type="number" id="adesaoValor">
+        </div>
+
+        <div class="field">
+          <label>Status</label>
+
+          <select id="adesaoStatus">
+            <option value="pagaDireta">
+              Já Paga
+            </option>
+
+            <option value="pendente">
+              Pagamento Futuro
+            </option>
+          </select>
+
+        </div>
+
+        <div class="field">
+          <label>Data do Pagamento</label>
+          <input type="date" id="adesaoData">
+        </div>
+
+        <div class="field">
+          <label>Nome do Vendedor</label>
+          <input type="text" id="vendedor">
+        </div>
+
+      </div>
+
+      <button class="btn" style="margin-top:20px;" onclick="salvarAdesao()">
+        Salvar Adesão
+      </button>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Adesões Pendentes</h2>
+
+      <div id="listaPendentes"></div>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Adesões Pagas Diretamente</h2>
+
+      <div id="listaPagasDiretas"></div>
+
+    </div>
+
+    <div class="card">
+
+      <h2>Adesões Pagas Após Baixa</h2>
+
+      <div id="listaBaixadas"></div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<div class="hidden">
+  <div id="pdfArea"></div>
+</div>
+
+<script>
+
+let adesoes = JSON.parse(localStorage.getItem('adesoes')) || [];
+
+function toggleMenu(){
+
+  document.getElementById('sidebar')
+  .classList.toggle('active');
+
+}
+
+function abrirPagina(id){
+
+  document.querySelectorAll('.page')
+  .forEach(p=>p.classList.remove('active'));
+
+  document.getElementById(id)
+  .classList.add('active');
+
+  document.getElementById('sidebar')
+  .classList.remove('active');
+
+}
+
+function selecionarPlano(el, plano){
+
+  document.querySelectorAll('.plano')
+  .forEach(p=>p.classList.remove('selected'));
+
+  el.classList.add('selected');
+
+  document.getElementById('plano').value = plano;
+
+}
+
+function adicionarDependente(){
+
+  const div = document.createElement('div');
+
+  div.classList.add('dependente');
+
+  div.innerHTML = `
+
+    <div class="grid">
+
+      <div class="field">
+        <label>Nome do Dependente</label>
+        <input type="text" class="depNome">
+      </div>
+
+      <div class="field">
+        <label>Parentesco</label>
+        <input type="text" class="depParentesco">
+      </div>
+
+      <div class="field">
+        <label>Data de Nascimento</label>
+        <input type="date" class="depNascimento">
+      </div>
+
+    </div>
+
+  `;
+
+  document.getElementById('dependentes')
+  .appendChild(div);
+
+}
+
+adicionarDependente();
+
+function pegarLocalizacao(){
+
+  const lat = "-10.9134";
+  const lng = "-37.6681";
+
+  const link = `https://maps.google.com/?q=${lat},${lng}`;
+
+  document.getElementById('local').value =
+  "Localização Capturada";
+
+  document.getElementById('linkLocal').innerHTML = `
+    <a href="${link}" target="_blank">
+      ${link}
+    </a>
+  `;
+
+}
+
+function gerarPDF(){
+
+  const dependentes = [];
+
+  document.querySelectorAll('.dependente')
+  .forEach(dep=>{
+
+    dependentes.push({
+
+      nome:dep.querySelector('.depNome').value,
+      parentesco:dep.querySelector('.depParentesco').value,
+      nascimento:dep.querySelector('.depNascimento').value
+
+    });
+
+  });
+
+  const area = document.getElementById('pdfArea');
+
+  area.innerHTML = `
+
+  <div style="
+    width:210mm;
+    min-height:297mm;
+    padding:20mm;
+    background:white;
+    color:black;
+    font-family:Arial;
+  ">
+
+    <h1 style="
+      text-align:center;
+      margin-bottom:30px;
+    ">
+      FICHA DE ADESÃO
+    </h1>
+
+    <table border="1"
+      style="
+      width:100%;
+      border-collapse:collapse;
+      margin-bottom:20px;
+    ">
+
+      <tr>
+        <td style="padding:10px;"><strong>Plano</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('plano').value || '-'}
+        </td>
+
+        <td style="padding:10px;"><strong>Valor</strong></td>
+        <td style="padding:10px;">
+          R$ ${document.getElementById('valorPlano').value || '0,00'}
+        </td>
+      </tr>
+
+    </table>
+
+    <h2>Dados do Cliente</h2>
+
+    <table border="1"
+      style="
+      width:100%;
+      border-collapse:collapse;
+      margin-bottom:20px;
+    ">
+
+      <tr>
+        <td style="padding:10px;"><strong>Nome</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('nome').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>Nascimento</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('nascimento').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>CPF</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('cpf').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>RG</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('rg').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>Telefone</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('telefone').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>Endereço</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('endereco').value},
+          ${document.getElementById('numero').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>Bairro</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('bairro').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>CEP</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('cep').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>Ponto de Referência</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('referencia').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>Estado Civil</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('estadoCivil').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>Religião</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('religiao').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>Data de Adesão</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('dataAdesao').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>Vencimento</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('vencimento').value}
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px;"><strong>Local</strong></td>
+        <td style="padding:10px;">
+          ${document.getElementById('local').value}
+        </td>
+      </tr>
+
+    </table>
+
+    <h2>Dependentes</h2>
+
+    <table border="1"
+      style="
+      width:100%;
+      border-collapse:collapse;
+      margin-bottom:20px;
+    ">
+
+      <tr>
+        <th style="padding:10px;">Nome</th>
+        <th style="padding:10px;">Parentesco</th>
+        <th style="padding:10px;">Nascimento</th>
+      </tr>
+
+      ${dependentes.map(dep=>`
+
+        <tr>
+
+          <td style="padding:10px;">
+            ${dep.nome || '-'}
+          </td>
+
+          <td style="padding:10px;">
+            ${dep.parentesco || '-'}
+          </td>
+
+          <td style="padding:10px;">
+            ${dep.nascimento || '-'}
+          </td>
+
+        </tr>
+
+      `).join('')}
+
+    </table>
+
+  </div>
+
+  `;
+
+  html2pdf()
+  .set({
+
+    margin:0,
+    filename:'ficha_adesao.pdf',
+
+    image:{
+      type:'jpeg',
+      quality:1
+    },
+
+    html2canvas:{
+      scale:2,
+      useCORS:true
+    },
+
+    jsPDF:{
+      unit:'mm',
+      format:'a4',
+      orientation:'portrait'
+    }
+
+  })
+  .from(area)
+  .save();
+
+}
+
+function salvarAdesao(){
+
+  const adesao = {
+
+    nome:document.getElementById('adesaoNome').value,
+
+    valor:document.getElementById('adesaoValor').value,
+
+    status:document.getElementById('adesaoStatus').value,
+
+    data:document.getElementById('adesaoData').value,
+
+    vendedor:document.getElementById('vendedor').value
+
+  };
+
+  adesoes.push(adesao);
+
+  localStorage.setItem(
+    'adesoes',
+    JSON.stringify(adesoes)
+  );
+
+  renderizarAdesoes();
+
+  alert("Adesão salva!");
+
+}
+
+function renderizarAdesoes(){
+
+  const pendentes =
+  document.getElementById('listaPendentes');
+
+  const pagasDiretas =
+  document.getElementById('listaPagasDiretas');
+
+  const baixadas =
+  document.getElementById('listaBaixadas');
+
+  pendentes.innerHTML = "";
+  pagasDiretas.innerHTML = "";
+  baixadas.innerHTML = "";
+
+  const hoje = new Date();
+
+  adesoes.sort((a,b)=>
+    new Date(a.data) - new Date(b.data)
+  );
+
+  adesoes.forEach((a,index)=>{
+
+    const dataAdesao = new Date(a.data);
+
+    // PAGAS DIRETAS
+    if(a.status === "pagaDireta"){
+
+      pagasDiretas.innerHTML += `
+
+        <div class="adesao-item">
+
+          <h3>${a.nome}</h3>
+
+          <p>Valor: R$ ${a.valor}</p>
+
+          <p>Data: ${a.data}</p>
+
+          <p>Vendedor: ${a.vendedor}</p>
+
+          <span class="badge paga-direta">
+            PAGO DIRETAMENTE
+          </span>
+
+        </div>
+
+      `;
+
+    }
+
+    // PAGAS POR BAIXA
+    else if(a.status === "baixada"){
+
+      baixadas.innerHTML += `
+
+        <div class="adesao-item">
+
+          <h3>${a.nome}</h3>
+
+          <p>Valor: R$ ${a.valor}</p>
+
+          <p>Data Original: ${a.data}</p>
+
+          <p>Vendedor: ${a.vendedor}</p>
+
+          <span class="badge paga-baixa">
+            BAIXADA COMO PAGA
+          </span>
+
+        </div>
+
+      `;
+
+    }
+
+    // PENDENTES
+    else{
+
+      const atrasada =
+      dataAdesao < hoje;
+
+      pendentes.innerHTML += `
+
+        <div class="adesao-item">
+
+          <h3>${a.nome}</h3>
+
+          <p>Valor: R$ ${a.valor}</p>
+
+          <p>Vencimento: ${a.data}</p>
+
+          <p>Vendedor: ${a.vendedor}</p>
+
+          <span class="badge ${
+            atrasada ? 'atrasada' : 'pendente'
+          }">
+
+            ${
+              atrasada
+              ? 'ATRASADA'
+              : 'PENDENTE'
+            }
+
+          </span>
+
+          <br><br>
+
+          <button class="btn-green"
+            onclick="darBaixa(${index})">
+
+            Dar Baixa
+
+          </button>
+
+        </div>
+
+      `;
+
+    }
+
+  });
+
+}
+
+function darBaixa(index){
+
+  adesoes[index].status = "baixada";
+
+  localStorage.setItem(
+    'adesoes',
+    JSON.stringify(adesoes)
+  );
+
+  renderizarAdesoes();
+
+}
+
+renderizarAdesoes();
+
+</script>
+
+</body>
+</html>
